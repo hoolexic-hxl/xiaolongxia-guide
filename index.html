@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小龙虾上云记 · 腾讯云 × DeepSeek × OpenClaw 部署指南</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --ink: #1a1a2e;
+            --ink-light: #2d2d44;
+            --paper: #faf8f5;
+            --coral: #e85d4c;
+            --coral-soft: #fff0ee;
+            --gold: #c9a96e;
+            --gold-soft: #f5f0e6;
+            --text: #333344;
+            --text-muted: #888899;
+            --border: #e8e5e0;
+            --shadow: 0 4px 24px rgba(26,26,46,0.08);
+            --shadow-hover: 0 8px 40px rgba(26,26,46,0.14);
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Noto Sans SC', -apple-system, sans-serif;
+            background: var(--paper);
+            color: var(--text);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        
+        /* ===== HERO ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            position: relative;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d44 50%, #16213e 100%);
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(232,93,76,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(201,169,110,0.12) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .hero-particles {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100vh) translateX(50px); opacity: 0; }
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            padding: 2rem;
+            max-width: 800px;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(232,93,76,0.2);
+            border: 1px solid rgba(232,93,76,0.4);
+            color: #ffb4a6;
+            padding: 0.5rem 1.2rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+        
+        .hero-badge .emoji { font-size: 1.1em; }
+        
+        .hero h1 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            letter-spacing: -0.02em;
+        }
+        
+        .hero h1 .highlight {
+            background: linear-gradient(135deg, var(--coral), var(--gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: rgba(255,255,255,0.65);
+            font-weight: 300;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .hero-meta {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+        
+        .hero-meta span { display: flex; align-items: center; gap: 0.3rem; }
+        
+        .scroll-hint {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.4);
+            font-size: 0.85rem;
+            animation: bounce 2s infinite;
+            cursor: pointer;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+        
+        /* ===== OVERVIEW ===== */
+        .overview {
+            padding: 6rem 2rem;
+            max-width: 1100px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .overview h2 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2.2rem;
+            color: var(--ink);
+            margin-bottom: 1rem;
+        }
+        
+        .overview-lead {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 3rem;
+        }
+        
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .overview-card {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .overview-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--coral);
+        }
+        
+        .overview-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .overview-card h3 {
+            font-size: 1.1rem;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+        }
+        
+        .overview-card p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+        
+        /* ===== STEPS ===== */
+        .steps-section {
+            padding: 4rem 2rem 6rem;
+            background: linear-gradient(180deg, var(--paper) 0%, #fff 50%, var(--paper) 100%);
+        }
+        
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+        
+        .section-header h2 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 2.2rem;
+            color: var(--ink);
+            margin-bottom: 0.75rem;
+        }
+        
+        .section-header p {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+        }
+        
+        .timeline {
+            position: relative;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 32px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--coral), var(--gold));
+            border-radius: 2px;
+        }
+        
+        .step {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+            opacity: 0;
+            transform: translateX(-30px);
+            transition: all 0.6s ease;
+        }
+        
+        .step.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .step-number {
+            flex-shrink: 0;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--coral), #f07060);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.5rem;
+            font-weight: 700;
+            box-shadow: 0 4px 16px rgba(232,93,76,0.3);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step-content {
+            flex: 1;
+            background: #fff;
+            border-radius: 20px;
+            padding: 2rem 2.5rem;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+        
+        .step-content:hover {
+            box-shadow: var(--shadow-hover);
+            transform: translateX(4px);
+        }
+        
+        .step-tag {
+            display: inline-block;
+            background: var(--coral-soft);
+            color: var(--coral);
+            padding: 0.25rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .step-content h3 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 1.4rem;
+            color: var(--ink);
+            margin-bottom: 0.75rem;
+        }
+        
+        .step-content p {
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        
+        .step-details {
+            background: var(--gold-soft);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            border-left: 3px solid var(--gold);
+        }
+        
+        .step-details ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .step-details li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text);
+        }
+        
+        .step-details li::before {
+            content: '›';
+            position: absolute;
+            left: 0;
+            color: var(--coral);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        
+        .code-block {
+            background: var(--ink);
+            color: #e8e5e0;
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            margin-top: 0.75rem;
+            border: 1px solid var(--ink-light);
+        }
+        
+        .code-block .comment { color: #6a6a8a; font-style: italic; }
+        .code-block .cmd { color: #c9a96e; }
+        
+        /* ===== TIPS ===== */
+        .tips-section {
+            padding: 4rem 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        .tips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .tip-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 1.75rem;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tip-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 3px;
+            background: linear-gradient(90deg, var(--coral), var(--gold));
+        }
+        
+        .tip-card .tip-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.75rem;
+            display: block;
+        }
+        
+        .tip-card h4 {
+            font-size: 1rem;
+            color: var(--ink);
+            margin-bottom: 0.5rem;
+        }
+        
+        .tip-card p {
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        
+        /* ===== FOOTER ===== */
+        .footer {
+            background: var(--ink);
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 3rem 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .footer .emoji { font-size: 1.5rem; margin-bottom: 0.5rem; display: block; }
+        
+        /* ===== ANIMATIONS ===== */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .animate-in {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+        
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .timeline::before { left: 24px; }
+            .step-number { width: 48px; height: 48px; font-size: 1.2rem; }
+            .step { gap: 1rem; }
+            .step-content { padding: 1.5rem; }
+            .hero h1 { font-size: 2.2rem; }
+            .hero-subtitle { font-size: 1rem; }
+        }
+        
+        /* ===== FUN EXTRAS ===== */
+        .lobster-float {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            font-size: 2rem;
+            cursor: pointer;
+            z-index: 100;
+            animation: lobsterBob 3s ease-in-out infinite;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
+            transition: transform 0.3s ease;
+        }
+        
+        .lobster-float:hover {
+            transform: scale(1.2) rotate(-10deg);
+        }
+        
+        @keyframes lobsterBob {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-8px) rotate(5deg); }
+            75% { transform: translateY(-4px) rotate(-3deg); }
+        }
+        
+        .tooltip {
+            position: fixed;
+            bottom: 5rem;
+            right: 2rem;
+            background: var(--ink);
+            color: #fff;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        
+        .tooltip.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .progress-bar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--coral), var(--gold));
+            z-index: 1000;
+            transition: width 0.1s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-bar" id="progressBar"></div>
+    
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <div class="hero-particles" id="particles"></div>
+        <div class="hero-content">
+            <div class="hero-badge">
+                <span class="emoji">🦞</span>
+                <span>零代码部署 · 10 分钟上手</span>
+            </div>
+            <h1>
+                小龙虾<br>
+                <span class="highlight">上云记</span>
+            </h1>
+            <p class="hero-subtitle">
+                腾讯云服务器 + DeepSeek + OpenClaw 完整部署指南<br>
+                不用写代码，不用懂 Linux，有手就行
+            </p>
+            <div class="hero-meta">
+                <span>⏱ 约 10 分钟</span>
+                <span>💰 99 元/年</span>
+                <span>🎯 适合纯小白</span>
+            </div>
+        </div>
+        <div class="scroll-hint" onclick="document.getElementById('overview').scrollIntoView({behavior:'smooth'})">
+            向下滚动开始 ↓
+        </div>
+    </section>
+    
+    <!-- OVERVIEW -->
+    <section class="overview" id="overview">
+        <h2>部署全景图</h2>
+        <p class="overview-lead">五步走完全程，每一步都经过精心简化。不需要记命令，不需要配环境，跟着点就行。</p>
+        <div class="overview-grid">
+            <div class="overview-card">
+                <span class="icon">☁️</span>
+                <h3>买服务器</h3>
+                <p>腾讯云 99 元/年轻量服务器，2核2G 足够跑小龙虾</p>
+            </div>
+            <div class="overview-card">
+                <span class="icon">🦞</span>
+                <h3>装小龙虾</h3>
+                <p>控制台一键重装，选择 OpenClaw 应用模板，1 分钟完成</p>
+            </div>
+            <div class="overview-card">
+                <span class="icon">🧠</span>
+                <h3>接大脑</h3>
+                <p>配置 DeepSeek 或其他大模型 API，赋予小龙虾思考能力</p>
+            </div>
+            <div class="overview-card">
+                <span class="icon">💬</span>
+                <h3>连聊天</h3>
+                <p>接入飞书、企业微信、QQ 或 Telegram，随时随地对话</p>
+            </div>
+            <div class="overview-card">
+                <span class="icon">🎉</span>
+                <h3>开玩</h3>
+                <p>设置权限、记忆库和技能，你的 AI 助手正式上岗</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- STEPS -->
+    <section class="steps-section" id="steps">
+        <div class="steps-container">
+            <div class="section-header">
+                <h2>详细步骤</h2>
+                <p>每一步都配有「避坑提醒」，新手也能一次成功</p>
+            </div>
+            
+            <div class="timeline">
+                <!-- Step 1 -->
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <span class="step-tag">准备工作</span>
+                        <h3>购买腾讯云服务器</h3>
+                        <p>腾讯云轻量应用服务器 99 元/年，2核2G 足够跑小龙虾。</p>
+                        <div class="step-details">
+                            <ul>
+                                <li>访问腾讯云官网，搜索「轻量应用服务器」</li>
+                                <li>选 99 元/年入门套餐（2核2G + 40G SSD）</li>
+                                <li>创建方式选「应用模板」，镜像选「OpenClaw(龙虾)」</li>
+                                <li>设好密码，选地域，付款</li>
+                            </ul>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># ⚠️ 关键：必须选「应用模板」里的 OpenClaw</span>
+<span class="comment"># 选错成系统镜像，装出来是空 Linux，还得手动装</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 2 -->
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <span class="step-tag">核心操作</span>
+                        <h3>确认 OpenClaw 已安装</h3>
+                        <p>买的时候选了应用模板，一般已经装好了。只需确认一下。</p>
+                        <div class="step-details">
+                            <ul>
+                                <li>进「轻量应用服务器控制台」</li>
+                                <li>看服务器 Logo 是不是 🦞</li>
+                                <li>是 → 跳过这步</li>
+                                <li>不是 → 点「重装系统」→ 选「应用模板」→「OpenClaw」→ 确认</li>
+                            </ul>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 重装约 1 分钟，期间会重启，正常</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 3 -->
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <span class="step-tag">赋予智能</span>
+                        <h3>配置 DeepSeek 大模型</h3>
+                        <p>小龙虾需要大脑。接入 DeepSeek，让它能思考能对话。</p>
+                        <div class="step-details">
+                            <ul>
+                                <li>点服务器名进详情页 →「应用管理」</li>
+                                <li>找到「自定义模型」，填 DeepSeek API 地址和 Key</li>
+                                <li>点「添加并应用」，等状态变「应用中」</li>
+                                <li>或直接用腾讯云内置 DeepSeek 通道，更省事</li>
+                            </ul>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 推荐配置：</span>
+<span class="cmd">模型</span>: DeepSeek-R1 或 DeepSeek-V3
+<span class="cmd">API</span>: https://api.deepseek.com/v1
+<span class="comment"># 内置通道无需额外申请 Key</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 4 -->
+                <div class="step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <span class="step-tag">连接世界</span>
+                        <h3>接入聊天平台</h3>
+                        <p>让小龙虾住进你常用的聊天工具，随时@它。</p>
+                        <div class="step-details">
+                            <ul>
+                                <li><strong>推荐</strong>：「应用管理」面板选平台（飞书/企微/QQ/钉钉），扫码授权</li>
+                                <li><strong>进阶</strong>：终端执行 <code>openclaw onboard</code> 启动交互向导</li>
+                                <li>按引导选渠道 → 填 Token → 完成</li>
+                                <li>发一条测试消息，确认能回复</li>
+                            </ul>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 快速验证：</span>
+<span class="cmd">openclaw tui</span>  <span class="comment"># 打开对话界面</span>
+<span class="cmd">openclaw web</span>  <span class="comment"># 启动 Web 后台（端口 18789）</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Step 5 -->
+                <div class="step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <span class="step-tag">安全加固</span>
+                        <h3>权限设置</h3>
+                        <p>给小龙虾划边界，让它听话不越权。</p>
+                        <div class="step-details">
+                            <ul>
+                                <li><strong>工作区</strong>：只开指定文件夹，禁访问系统盘</li>
+                                <li><strong>操作权限</strong>：关闭系统修改、软件安装、文件删除</li>
+                                <li><strong>二次确认</strong>：任何删除/修改都需你点头</li>
+                                <li><strong>记忆库</strong>：配置长期记忆，越用越懂你</li>
+                            </ul>
+                        </div>
+                        <div class="code-block">
+<span class="comment"># 原则：只给必要权限，不给多余自由</span>
+<span class="comment"># 它是助手，不是管理员 😄</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- TIPS -->
+    <section class="tips-section" id="tips">
+        <div class="section-header">
+            <h2>避坑指南 & 进阶技巧</h2>
+            <p>前人踩过的坑，你就不要再踩了</p>
+        </div>
+        <div class="tips-grid">
+            <div class="tip-card">
+                <span class="tip-icon">🔥</span>
+                <h4>防火墙记得放行</h4>
+                <p>如果 Web 后台打不开，90% 是因为安全组没放行 18789 端口。去控制台 → 防火墙 → 添加规则，TCP 协议放行即可。</p>
+            </div>
+            <div class="tip-card">
+                <span class="tip-icon">💸</span>
+                <h4>模型费用控制</h4>
+                <p>日常任务国产模型完全够用，月均 30~80 元。不要盲目上 GPT-4o 或 Claude，新手 90% 的场景用不上。</p>
+            </div>
+            <div class="tip-card">
+                <span class="tip-icon">🔑</span>
+                <h4>API Key 保管</h4>
+                <p>Key 即密码，不要上传到 GitHub 或公开平台。建议单独保存在本地密码管理器，定期轮换。</p>
+            </div>
+            <div class="tip-card">
+                <span class="tip-icon">🐳</span>
+                <h4>本地部署备选</h4>
+                <p>如果云服务器到期，可以用 Docker 本地部署：docker compose up -d，数据全在本地，隐私性更强。</p>
+            </div>
+            <div class="tip-card">
+                <span class="tip-icon">🛠</span>
+                <h4>Skills 技能商店</h4>
+                <p>OpenClaw 支持插件扩展。后续可以在 Skill 商店安装「会议纪要」「竞品监控」「社群管理」等实用工具。</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- FOOTER -->
+    <footer class="footer">
+        <span class="emoji">🦞</span>
+        <p>祝你养虾愉快 · 有问题多查文档多搜索 · 社区力量很强大</p>
+        <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;">本文档基于公开教程整理 · 部署流程以腾讯云最新控制台为准</p>
+    </footer>
+    
+    <!-- Floating Lobster -->
+    <div class="lobster-float" id="lobster" title="点击回到顶部">🦞</div>
+    <div class="tooltip" id="tooltip">点我回到顶部 ↑</div>
+    
+    <script>
+        // Particles
+        const particleContainer = document.getElementById('particles');
+        for (let i = 0; i < 30; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.animationDelay = Math.random() * 15 + 's';
+            p.style.animationDuration = (10 + Math.random() * 10) + 's';
+            particleContainer.appendChild(p);
+        }
+        
+        // Scroll animations
+        const steps = document.querySelectorAll('.step');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, { threshold: 0.2 });
+        
+        steps.forEach(step => observer.observe(step));
+        
+        // Progress bar
+        const progressBar = document.getElementById('progressBar');
+        window.addEventListener('scroll', () => {
+            const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+            const scrollHeight = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const progress = (scrollTop / scrollHeight) * 100;
+            progressBar.style.width = progress + '%';
+        });
+        
+        // Lobster interactions
+        const lobster = document.getElementById('lobster');
+        const tooltip = document.getElementById('tooltip');
+        
+        lobster.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        
+        lobster.addEventListener('mouseenter', () => {
+            tooltip.classList.add('show');
+        });
+        
+        lobster.addEventListener('mouseleave', () => {
+            tooltip.classList.remove('show');
+        });
+        
+        // Show tooltip briefly on page load
+        setTimeout(() => {
+            tooltip.classList.add('show');
+            setTimeout(() => tooltip.classList.remove('show'), 3000);
+        }, 2000);
+    </script>
+</body>
+</html>
